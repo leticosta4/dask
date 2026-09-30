@@ -304,18 +304,21 @@ from dask.typing import Key     # local submodules
 
 | Workflow | Purpose |
 |---|---|
-| `tests.yml` | Main test matrix (Python 3.10–3.14, multiple envs, scheduled reruns) |
-| `conda.yml` | Conda packaging |
-| `pre-commit.yml` | Linting on PRs |
-| `upstream.yml` | Test against latest upstream packages |
+| `tests.yml` | Main test matrix (reduced locally: py312 + mindeps-* + spark on ubuntu) |
+| `upstream.yml` | Test against latest upstream packages (py314, nightly) |
+| `test-report.yaml` | Generates the flaky-test report page (gh-pages) |
 | `release-*.yml` | Release automation |
+| `stale-bot.yaml`, `release-drafter.yml` | Repo housekeeping |
+
+Note: `conda.yml`, `pre-commit.yml`, `additional.yml`, `label-all.yml` and
+`publish-test-results.yaml` were removed to cut CI cost. Lint locally with
+`pixi run lint lint`.
 
 ### Matrix Coverage
 
-- Python 3.10, 3.11, 3.12, 3.13, 3.14
-- OS: Ubuntu (x86_64 & arm64), macOS, Windows
-- Environments: default, mindeps-{array,dataframe,distributed,non-optional,optional}, nightly, spark, py314t (free-threaded)
-- Scheduled: Twice daily for flaky test detection
+- Python 3.12 (main matrix); 3.14 + nightly via `upstream.yml`
+- OS: Ubuntu only
+- Environments: py312, mindeps-{array,dataframe,distributed,non-optional,optional}, spark
 
 ### Codecov
 
