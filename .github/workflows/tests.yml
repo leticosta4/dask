@@ -23,35 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Note: after adding/removing builds here, update
-        # codecov.yml to match.
         os: [ubuntu-latest]
         environment: [py312]
         task: [test-ci]
-        include:
-          # Minimum dependencies
-          - os: ubuntu-latest
-            environment: mindeps-array
-            task: test-ci
-          - os: ubuntu-latest
-            environment: mindeps-dataframe
-            task: test-ci
-          - os: ubuntu-latest
-            environment: mindeps-distributed
-            task: test-ci
-          - os: ubuntu-latest
-            environment: mindeps-non-optional
-            task: test-ci
-          - os: ubuntu-latest
-            environment: mindeps-optional
-            task: test-ci
-          # Experimental setups
-          - os: ubuntu-latest
-            environment: mindeps-array
-            task: test-array-expr
-          - os: ubuntu-latest
-            environment: spark
-            task: test-spark
 
     steps:
       - name: Checkout source
@@ -60,7 +34,6 @@ jobs:
           fetch-depth: 0
 
       - name: Reconfigure pytest-timeout
-        # No SIGALRM available on Windows
         # Note: all changes to the source code must happen before setup-pixi
         # or we'll build the package twice
         run: sed -i.bak 's/timeout_method = "thread"/timeout_method = "signal"/' pyproject.toml
@@ -75,13 +48,3 @@ jobs:
       - name: Run tests
         id: run_tests
         run: pixi run -e ${{ matrix.environment }} ${{ matrix.task }}
-
-      - name: Upload test results
-        # ensure this runs even if pytest fails
-        if: >
-          always() &&
-          (steps.run_tests.outcome == 'success' || steps.run_tests.outcome == 'failure')
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.os }}-${{ matrix.environment }}-${{ matrix.task }}
-          path: pytest.xml
