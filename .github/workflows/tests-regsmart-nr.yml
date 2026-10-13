@@ -51,5 +51,5 @@ jobs:
       - name: Run tests regsmart nr
         id: run_tests_rgsm_nr
         env:
-          PYTEST_ADDOPTS: "--regsmart --no-rank
+          PYTEST_ADDOPTS: "--regsmart --no-rank"
         run: pixi run -e py312 test-ci
