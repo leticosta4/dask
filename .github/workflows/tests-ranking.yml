@@ -1,0 +1,83 @@
+name: Tests ranking
+
+on:
+  push:
+    branches: [main, '!flaky-r*', '!insert-mutations', '!track-flaky']
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+
+# When this workflow is queued, automatically cancel any previous running
+# or pending jobs from the same branch
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RANKING_PACKAGE: "pytest-ranking"
+
+jobs:
+  test:
+    # If you change the pattern of this name, please adjust
+    # ../distributed/continuous_integration/scripts/test_report.py accordingly
+    name: ranking (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [rkn_qtf, rkn_recentfail, rkn_simchgpath, rkn_hybrid]
+        include:
+          - mode: rkn_qtf
+            weight: "1-0-0"
+          - mode: rkn_recentfail
+            weight: "0-1-0"
+          - mode: rkn_simchgpath
+            weight: "0-0-1"
+          - mode: rkn_hybrid
+            weight: "1-1-1"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Reconfigure pytest-timeout
+        # Note: all changes to the source code must happen before setup-pixi
+        # or we'll build the package twice
+        run: sed -i.bak 's/timeout_method = "thread"/timeout_method = "signal"/' pyproject.toml
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.72.1
+          environments: py312
+          cache: true
+          locked: true
+      
+      - name: Install pytest-ranking
+        run: |
+          pixi run -e py312 --as-is python -m pip install "$RANKING_PACKAGE"
+          pixi run -e py312 --as-is python -m pip freeze
+        
+      - name: Restore pytest-ranking cache
+        id: restore-pytest-ranking-cache
+        if: always()
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/.pytest_cache/v/pytest_ranking_data
+          key: pytest-ranking-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}
+
+      - name: Run tests ranking
+        id: run_tests_rkng
+        env:
+          PYTEST_ADDOPTS: "--rank --rank-weight=${{ matrix.weight }}"
+        run: pixi run -e py312 test-ci
+      
+      - name: Save pytest-ranking cache
+        id: save-pytest-ranking-cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.pytest_cache/v/pytest_ranking_data
+          key: pytest-ranking-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}-${{ github.run_id }}

@@ -1,0 +1,81 @@
+name: Tests regsmart
+
+on:
+  push:
+    branches: [main, '!flaky-r*', '!insert-mutations', '!track-flaky']
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+
+# When this workflow is queued, automatically cancel any previous running
+# or pending jobs from the same branch
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGSMART_PACKAGE: "git+https://github.com/leticosta4/pytest-regsmart@eade339d65eec2d0735d023c760ab01697afbc68"
+
+jobs:
+  test:
+    # If you change the pattern of this name, please adjust
+    # ../distributed/continuous_integration/scripts/test_report.py accordingly
+    name: regsmart (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [rgsm_qtf, rgsm_recentfail, rgsm_hybrid]
+        include:
+          - mode: rgsm_qtf
+            weight: "1-0"
+          - mode: rgsm_recentfail
+            weight: "0-1"
+          - mode: rgsm_hybrid
+            weight: "1-1"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Reconfigure pytest-timeout
+        # Note: all changes to the source code must happen before setup-pixi
+        # or we'll build the package twice
+        run: sed -i.bak 's/timeout_method = "thread"/timeout_method = "signal"/' pyproject.toml
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.72.1
+          environments: py312
+          cache: true
+          locked: true
+      
+      - name: Install pytest-regsmart
+        run: |
+          pixi run -e py312 --as-is python -m pip install "$REGSMART_PACKAGE"
+          pixi run -e py312 --as-is python -m pip freeze
+        
+      - name: Restore pytest-regsmart cache
+        id: restore-pytest-regsmart-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/.pytest_cache/v/pytest_ranked_selection_data
+          key: pytest-regsmart-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}
+          restore-keys: |
+            pytest-regsmart-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}-
+
+      - name: Run tests regsmart
+        id: run_tests_rgsm
+        env:
+          PYTEST_ADDOPTS: "--regsmart --ranking-weight=${{ matrix.weight }}"
+        run: pixi run -e py312 test-ci
+      
+      - name: Save pytest-regsmart cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.pytest_cache/v/pytest_ranked_selection_data
+          key: pytest-regsmart-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}-${{ github.run_id }}

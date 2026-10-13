@@ -15,10 +15,7 @@ concurrency:
 
 jobs:
   test:
-    # If you change the pattern of this name, please adjust
-    # ../distributed/continuous_integration/scripts/test_report.py accordingly
-    name: ${{ matrix.os }} ${{ matrix.environment }} ${{ matrix.task }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -41,10 +38,12 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
           pixi-version: v0.72.1
-          environments: ${{ matrix.environment }}
+          environments: py312
           cache: true
           locked: true
 
       - name: Run tests
         id: run_tests
-        run: pixi run -e ${{ matrix.environment }} ${{ matrix.task }}
+        env:
+          PYTEST_ADDOPTS: "-p no:pytest-ranking -p no:pytest-regsmart"
+        run: pixi run -e py312 test-ci
