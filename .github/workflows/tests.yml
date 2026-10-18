@@ -45,5 +45,14 @@ jobs:
       - name: Run tests
         id: run_tests
         env:
-          PYTEST_ADDOPTS: "-p no:pytest-ranking -p no:pytest-regsmart"
+          PYTEST_ADDOPTS: "--report-log=reportlog.jsonl"
         run: pixi run -e py312 test-ci
+
+      - name: Upload report-log
+        if: ${{ !cancelled() }}   # com mutante o step de teste falha; sem isso o arquivo não sobe
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportlog-baseline
+          path: reportlog.jsonl
+          retention-days: 14
+          if-no-files-found: warn
