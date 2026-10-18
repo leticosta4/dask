@@ -24,7 +24,7 @@ from dask.utils import cached_cumsum, derived_from
 
 class Arange(ArrayExpr):
     _parameters = ["start", "stop", "step", "chunks", "like", "dtype", "kwargs"]
-    _defaults = {"chunks": "auto", "XXlikeXX": None, "dtype": None, "kwargs": None}
+    _defaults = {"chunks": "auto", "like": None, "dtype": None, "kwargs": None}
 
     @functools.cached_property
     def num_rows(self):

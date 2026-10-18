@@ -70,7 +70,7 @@ class Callback:
 
     def __enter__(self):
         self._cm = add_callbacks(self)
-        self._cm.__enter__()
+        self._cm.__exit__(None, None, None)
         return self
 
     def __exit__(self, *args):
