@@ -491,7 +491,7 @@ def add_dummy_padding(x, depth, boundary):
             ax_chunks = list(out_chunks[k])
             ax_chunks[0] += d
             ax_chunks[-1] += d
-            out_chunks[k] = None
+            out_chunks[k] = tuple(ax_chunks)
 
             x = concatenate([empty, x, empty], axis=k)
             x = x.rechunk(out_chunks)
@@ -845,7 +845,7 @@ def sliding_window_view(x, window_shape, axis=None, automatic_rechunk=True):
 
     depths = [0] * x.ndim
     for ax, window in zip(axis, window_shape):
-        depths[ax] += window - 1
+        depths[ax] += window
 
     # Ensure that each chunk is big enough to leave at least a size-1 chunk
     # after windowing (this is only really necessary for the last chunk).
