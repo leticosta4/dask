@@ -70,7 +70,7 @@ jobs:
       - name: Run tests regsmart
         id: run_tests_rgsm
         env:
-          PYTEST_ADDOPTS: "--regsmart --ranking-weight=${{ matrix.weight }}"
+          PYTEST_ADDOPTS: "--report-log=reportlog.jsonl --regsmart --ranking-weight=${{ matrix.weight }}"
         run: pixi run -e py312 test-ci
       
       - name: Save pytest-regsmart cache
@@ -79,3 +79,12 @@ jobs:
         with:
           path: ${{ github.workspace }}/.pytest_cache/v/pytest_ranked_selection_data
           key: pytest-regsmart-cache-${{ github.workflow }}-${{ runner.os }}-${{ matrix.mode }}-${{ github.run_id }}
+
+      - name: Upload report-log
+        if: ${{ !cancelled() }}   # com mutante o step de teste falha; sem isso o arquivo não sobe
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportlog-${{ matrix.mode }}
+          path: reportlog.jsonl
+          retention-days: 14
+          if-no-files-found: warn
