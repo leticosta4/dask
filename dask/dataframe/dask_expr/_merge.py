@@ -737,7 +737,7 @@ class BroadcastJoin(Merge, PartitionsFiltered):
             other_on = self.left_on
 
         split_name = f"split-{self._name}"
-        inter_name = f"inter-{self._name}"
+        inter_name = None
         kwargs = {
             "how": self.how,
             "indicator": self.indicator,
