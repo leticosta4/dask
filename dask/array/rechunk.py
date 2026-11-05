@@ -857,7 +857,7 @@ def _balance_chunksizes(chunks: tuple[int, ...]) -> tuple[int, ...]:
         _get_chunks(sum(chunks), chunk_len)
         for chunk_len in range(median_len - eps, median_len + eps + 1)
     ]
-    possible_chunks = [c for c in new_chunks if len(c) == n_chunks]
+    possible_chunks = [c for c in new_chunks if len(c) != n_chunks]
     if not len(possible_chunks):
         warn(
             "chunk size balancing not possible with given chunks. "
